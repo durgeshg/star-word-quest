@@ -133,9 +133,29 @@
   .part{ transition:opacity .35s ease, transform .35s ease; transform-origin:center; }
   .part.gone{ opacity:0; transform:translateY(-14px) scale(.6) rotate(12deg); }
 
+  .question-block{
+    text-align:center; margin:10px 0 4px;
+  }
+  .category-badge{
+    display:inline-block; font-size:11px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.06em; padding:4px 12px; border-radius:999px;
+    background:rgba(167,139,250,.15); color:var(--violet); margin-bottom:8px;
+  }
   .clue{
-    text-align:center; color:var(--text-dim); font-size:13px; font-weight:700;
-    margin:6px 0 4px; min-height:18px;
+    text-align:center; color:var(--text); font-size:15px; font-weight:700;
+    margin:0; min-height:20px; line-height:1.4;
+  }
+
+  .sound-btn{
+    border:1px solid var(--line); background:var(--surface-2); color:var(--text-dim);
+    width:34px; height:34px; border-radius:10px; cursor:pointer; font-size:15px;
+    display:flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .sound-btn:hover{ background:#26365f; color:var(--text); }
+
+  .streak-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:800;
+    color:var(--gold);
   }
 
   .word-row{
@@ -190,6 +210,30 @@
 
   .hidden{ display:none !important; }
 
+  /* ---------- Player screen ---------- */
+  .player-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 24px; max-width:420px; margin:20px auto 0; text-align:center;
+  }
+  .player-card h2{ margin:0 0 6px; font-size:22px; }
+  .player-card p{ margin:0 0 20px; color:var(--text-dim); font-size:13px; }
+  .field{ text-align:left; margin-bottom:16px; }
+  .field label{ display:block; font-size:12px; font-weight:800; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+  .field input, .field select{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--text); font-family:'Nunito',sans-serif;
+    font-size:15px; font-weight:700;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--cyan); outline-offset:1px; }
+  .field select{ appearance:none; cursor:pointer; }
+
+  .player-chip{
+    display:flex; align-items:center; gap:6px; background:var(--surface);
+    border:1px solid var(--line); padding:8px 14px; border-radius:999px;
+    font-weight:800; font-size:13px; cursor:pointer; transition:.15s;
+  }
+  .player-chip:hover{ background:var(--surface-2); }
+
   footer.note{
     margin-top:26px; text-align:center; color:var(--text-dim); font-size:12px; line-height:1.6; max-width:520px;
   }
@@ -210,11 +254,38 @@
       <h1>🚀 Hangman: Rocket Launch</h1>
       <p>Guess the word, launch the rocket, collect Star Points</p>
     </div>
-    <div class="points-pill"><span class="star">⭐</span><span id="pointsDisplay">0</span> Star Points</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="player-chip hidden" id="playerChip"></button>
+      <div class="points-pill"><span class="star">⭐</span><span id="pointsDisplay">0</span> Star Points</div>
+      <button class="sound-btn" id="soundBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+    </div>
   </header>
 
+  <!-- PLAYER INFO -->
+  <section id="playerScreen">
+    <div class="player-card">
+      <h2>👋 Who's playing?</h2>
+      <p>We'll pick word sets that match your grade.</p>
+      <div class="field">
+        <label for="playerNameInput">Your name</label>
+        <input type="text" id="playerNameInput" placeholder="e.g. Maya" maxlength="20" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="playerGradeInput">Your grade</label>
+        <select id="playerGradeInput">
+          <option value="1">Grade 1</option>
+          <option value="2">Grade 2</option>
+          <option value="3">Grade 3</option>
+          <option value="4">Grade 4</option>
+          <option value="5">Grade 5</option>
+        </select>
+      </div>
+      <button class="btn primary" id="playerStartBtn" style="width:100%;">Let's Play →</button>
+    </div>
+  </section>
+
   <!-- LEVEL SELECT -->
-  <section id="levelSelect">
+  <section id="levelSelect" class="hidden">
     <div class="levels">
       <div class="level-card lv-easy" data-level="easy">
         <span class="badge">Easy</span>
@@ -242,7 +313,10 @@
     <div class="game-card">
       <div class="game-top">
         <button class="back-btn" id="backBtn">← Levels</button>
-        <span class="level-tag" id="levelTag"></span>
+        <div style="text-align:center;">
+          <span class="level-tag" id="levelTag"></span><br>
+          <span class="streak-badge" id="streakBadge"></span>
+        </div>
         <button class="hint-btn" id="hintBtn">💡 Hint</button>
       </div>
 
@@ -259,7 +333,10 @@
         </svg>
       </div>
 
-      <div class="clue" id="clueText"></div>
+      <div class="question-block">
+        <span class="category-badge" id="categoryBadge"></span>
+        <p class="clue" id="clueText"></p>
+      </div>
 
       <div class="word-row" id="wordRow"></div>
 
@@ -290,15 +367,17 @@
 
 <script>
 (function(){
-  // ---------- Word banks ----------
-  const WORD_BANKS = {
-    easy: [
+  // ---------- Word tiers (T1 = simplest ... T7 = most advanced) ----------
+  const TIERS = {
+    T1: [
       {w:'CAT', clue:'A furry pet that says meow', cat:'Animals'},
       {w:'SUN', clue:'It shines in the sky all day', cat:'Nature'},
       {w:'DOG', clue:'A pet that barks and wags its tail', cat:'Animals'},
       {w:'FISH', clue:'It swims and breathes underwater', cat:'Animals'},
       {w:'FROG', clue:'A green animal that hops and croaks', cat:'Animals'},
-      {w:'BOOK', clue:'You read this for a story', cat:'School'},
+      {w:'BOOK', clue:'You read this for a story', cat:'School'}
+    ],
+    T2: [
       {w:'TREE', clue:'It has leaves, branches, and roots', cat:'Nature'},
       {w:'JUMP', clue:'What you do on a trampoline', cat:'Action'},
       {w:'MILK', clue:'A white drink from a cow', cat:'Food'},
@@ -306,13 +385,15 @@
       {w:'PLAY', clue:'What you do with toys or friends', cat:'Action'},
       {w:'STAR', clue:'It twinkles in the night sky', cat:'Nature'}
     ],
-    medium: [
+    T3: [
       {w:'APPLE', clue:'A crunchy fruit, red or green', cat:'Food'},
       {w:'GARDEN', clue:'A place where flowers and veggies grow', cat:'Places'},
       {w:'PURPLE', clue:'A color made by mixing red and blue', cat:'Colors'},
       {w:'MONKEY', clue:'An animal that loves to climb trees', cat:'Animals'},
       {w:'CASTLE', clue:'A big stone home for a king or queen', cat:'Places'},
-      {w:'PENCIL', clue:'You write with this in school', cat:'School'},
+      {w:'PENCIL', clue:'You write with this in school', cat:'School'}
+    ],
+    T4: [
       {w:'ROCKET', clue:'It blasts off into outer space', cat:'Space'},
       {w:'PLANET', clue:'Earth is one of these in space', cat:'Space'},
       {w:'DOLPHIN', clue:'A smart, friendly animal that lives in the ocean', cat:'Animals'},
@@ -320,21 +401,45 @@
       {w:'ISLAND', clue:'Land surrounded by water on all sides', cat:'Places'},
       {w:'PUZZLE', clue:'A game with pieces that fit together', cat:'Games'}
     ],
-    hard: [
+    T5: [
       {w:'MOUNTAIN', clue:'A very tall, rocky landform', cat:'Geography'},
       {w:'ADVENTURE', clue:'An exciting and unusual journey', cat:'Ideas'},
       {w:'CALCULATE', clue:'To work out a math answer', cat:'Math'},
       {w:'VOCABULARY', clue:'All the words you know and use', cat:'Language'},
       {w:'EXERCISE', clue:'Moving your body to stay healthy', cat:'Health'},
-      {w:'CURIOUS', clue:'Wanting to learn or know more', cat:'Feelings'},
+      {w:'CURIOUS', clue:'Wanting to learn or know more', cat:'Feelings'}
+    ],
+    T6: [
       {w:'IMAGINE', clue:'To picture something in your mind', cat:'Ideas'},
       {w:'DISCOVER', clue:'To find something for the first time', cat:'Ideas'},
       {w:'FANTASTIC', clue:'Another word for amazing or wonderful', cat:'Descriptive'},
       {w:'MYSTERIOUS', clue:'Hard to explain or understand', cat:'Descriptive'},
       {w:'ENVIRONMENT', clue:'The natural world around us', cat:'Science'},
       {w:'CELEBRATE', clue:'To do something fun to mark a special day', cat:'Ideas'}
+    ],
+    T7: [
+      {w:'ARCHITECTURE', clue:'The art and science of designing buildings', cat:'Careers'},
+      {w:'PERSEVERE', clue:'To keep trying even when something is hard', cat:'Ideas'},
+      {w:'ENTHUSIASTIC', clue:'Full of excitement and energy about something', cat:'Feelings'},
+      {w:'INDEPENDENT', clue:'Able to do things on your own', cat:'Ideas'},
+      {w:'CIVILIZATION', clue:'A large, organized society with cities and culture', cat:'Social Studies'},
+      {w:'TEMPERATURE', clue:'A measurement of how hot or cold something is', cat:'Science'}
     ]
   };
+
+  // Which tier each grade uses for each difficulty — word sets get harder as grade goes up
+  const GRADE_TIER_MAP = {
+    1: {easy:'T1', medium:'T2', hard:'T3'},
+    2: {easy:'T2', medium:'T3', hard:'T4'},
+    3: {easy:'T3', medium:'T4', hard:'T5'},
+    4: {easy:'T4', medium:'T5', hard:'T6'},
+    5: {easy:'T5', medium:'T6', hard:'T7'}
+  };
+
+  function getWordBank(level){
+    const tierKey = GRADE_TIER_MAP[player.grade][level];
+    return TIERS[tierKey];
+  }
 
   const LEVELS = {
     easy:   {label:'Launch Pad · Easy',  maxWrong:6, hintCost:2, basePoints:10},
@@ -351,13 +456,21 @@
   let guessed = new Set();
   let wrongCount = 0;
   let usedIndexes = { easy:new Set(), medium:new Set(), hard:new Set() };
-  let clueRevealed = false;
+  let streak = 0;
+  let soundOn = true;
+  let audioCtx = null;
+  let player = { name:'', grade:1 };
 
   // ---------- Elements ----------
   const pointsDisplay = document.getElementById('pointsDisplay');
+  const playerScreen = document.getElementById('playerScreen');
   const levelSelect = document.getElementById('levelSelect');
   const gameScreen = document.getElementById('gameScreen');
   const resultScreen = document.getElementById('resultScreen');
+  const playerNameInput = document.getElementById('playerNameInput');
+  const playerGradeInput = document.getElementById('playerGradeInput');
+  const playerStartBtn = document.getElementById('playerStartBtn');
+  const playerChip = document.getElementById('playerChip');
   const levelTag = document.getElementById('levelTag');
   const clueText = document.getElementById('clueText');
   const wordRow = document.getElementById('wordRow');
@@ -365,6 +478,34 @@
   const triesLeft = document.getElementById('triesLeft');
   const wordProgress = document.getElementById('wordProgress');
   const hintBtn = document.getElementById('hintBtn');
+  const categoryBadge = document.getElementById('categoryBadge');
+  const streakBadge = document.getElementById('streakBadge');
+  const soundBtn = document.getElementById('soundBtn');
+
+  // ---------- Sound (light beeps, no external files) ----------
+  function beep(freq, duration, type){
+    if (!soundOn) return;
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + duration);
+    } catch(e){ /* audio not available, ignore */ }
+  }
+  function sfxCorrect(){ beep(660, 0.15, 'triangle'); }
+  function sfxWrong(){ beep(160, 0.2, 'sawtooth'); }
+  function sfxWin(){ beep(523,0.12); setTimeout(()=>beep(659,0.12),120); setTimeout(()=>beep(784,0.2),240); }
+  function sfxLose(){ beep(220,0.3,'sawtooth'); }
+
+  soundBtn.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? '🔊' : '🔇';
+  });
 
   function updatePoints(delta){
     points = Math.max(0, points + delta);
@@ -372,7 +513,7 @@
   }
 
   function pickWord(level){
-    const bank = WORD_BANKS[level];
+    const bank = getWordBank(level);
     let used = usedIndexes[level];
     if (used.size >= bank.length) used.clear();
     let idx;
@@ -386,9 +527,10 @@
     currentWord = pickWord(level);
     guessed = new Set();
     wrongCount = 0;
-    clueRevealed = false;
     levelTag.textContent = LEVELS[level].label;
-    clueText.textContent = '';
+    categoryBadge.textContent = currentWord.cat;
+    clueText.textContent = currentWord.clue;
+    updateStreakBadge();
     resetRocket();
     renderWord();
     renderKeyboard();
@@ -431,8 +573,12 @@
 
   function updateHintButton(){
     const cost = LEVELS[currentLevel].hintCost;
-    hintBtn.textContent = '💡 Hint (' + cost + '⭐)';
+    hintBtn.textContent = '💡 Reveal a letter (' + cost + '⭐)';
     hintBtn.disabled = points < cost;
+  }
+
+  function updateStreakBadge(){
+    streakBadge.textContent = streak > 0 ? ('🔥 Streak: ' + streak) : '';
   }
 
   function guessLetter(letter){
@@ -444,10 +590,12 @@
 
     if (currentWord.w.includes(letter)){
       if (btn) btn.classList.add('correct');
+      sfxCorrect();
     } else {
       if (btn) btn.classList.add('wrong');
       wrongCount++;
       removeRocketPart();
+      sfxWrong();
     }
     renderWord();
     updateStatus();
@@ -469,8 +617,14 @@
       const bonus = (cfg.maxWrong - wrongCount) * 2;
       const earned = cfg.basePoints + bonus;
       updatePoints(earned);
+      streak++;
+      updateStreakBadge();
+      sfxWin();
       setTimeout(()=>showResult(true, earned), 350);
     } else if (wrongCount >= cfg.maxWrong){
+      streak = 0;
+      updateStreakBadge();
+      sfxLose();
       setTimeout(()=>showResult(false, 0), 350);
     }
   }
@@ -481,21 +635,15 @@
     const remaining = currentWord.w.split('').filter(l=>!guessed.has(l));
     if (remaining.length === 0) return;
 
-    if (!clueRevealed){
-      clueText.textContent = '💭 ' + currentWord.cat + ': ' + currentWord.clue;
-      clueRevealed = true;
-      updatePoints(-cfg.hintCost);
-    } else {
-      const letter = remaining[Math.floor(Math.random()*remaining.length)];
-      guessed.add(letter);
-      const keys = keyboard.querySelectorAll('.key');
-      const btn = Array.from(keys).find(k=>k.textContent === letter);
-      if (btn){ btn.disabled = true; btn.classList.add('correct'); }
-      renderWord();
-      updateStatus();
-      updatePoints(-cfg.hintCost);
-      checkOutcome();
-    }
+    const letter = remaining[Math.floor(Math.random()*remaining.length)];
+    guessed.add(letter);
+    const keys = keyboard.querySelectorAll('.key');
+    const btn = Array.from(keys).find(k=>k.textContent === letter);
+    if (btn){ btn.disabled = true; btn.classList.add('correct'); }
+    renderWord();
+    updateStatus();
+    updatePoints(-cfg.hintCost);
+    checkOutcome();
     updateHintButton();
   }
 
@@ -505,18 +653,18 @@
     const detail = document.getElementById('resultDetail');
     if (win){
       emoji.textContent = '🚀';
-      title.textContent = 'Blast off! You got it!';
+      title.textContent = 'Blast off, ' + player.name + '!';
       detail.innerHTML = 'The word was <span class="word-reveal">' + currentWord.w + '</span>. You earned <b>' + earned + ' Star Points</b>!';
     } else {
       emoji.textContent = '🪐';
-      title.textContent = 'So close — try another one!';
+      title.textContent = 'So close, ' + player.name + ' — try another one!';
       detail.innerHTML = 'The word was <span class="word-reveal">' + currentWord.w + '</span>. No points lost — give the next word a shot!';
     }
     show(resultScreen);
   }
 
   function show(section){
-    [levelSelect, gameScreen, resultScreen].forEach(s=>s.classList.add('hidden'));
+    [playerScreen, levelSelect, gameScreen, resultScreen].forEach(s=>s.classList.add('hidden'));
     section.classList.remove('hidden');
   }
 
@@ -528,6 +676,23 @@
   document.getElementById('levelsBtn').addEventListener('click', ()=>show(levelSelect));
   document.getElementById('nextWordBtn').addEventListener('click', ()=>startLevel(currentLevel));
   hintBtn.addEventListener('click', useHint);
+
+  function confirmPlayer(){
+    const typedName = playerNameInput.value.trim();
+    player.name = typedName || 'Explorer';
+    player.grade = parseInt(playerGradeInput.value, 10);
+    usedIndexes = { easy:new Set(), medium:new Set(), hard:new Set() };
+    playerChip.textContent = '👤 ' + player.name + ' · Grade ' + player.grade;
+    playerChip.classList.remove('hidden');
+    show(levelSelect);
+  }
+  playerStartBtn.addEventListener('click', confirmPlayer);
+  playerNameInput.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') confirmPlayer(); });
+  playerChip.addEventListener('click', ()=>{
+    playerNameInput.value = player.name === 'Explorer' ? '' : player.name;
+    playerGradeInput.value = player.grade;
+    show(playerScreen);
+  });
 
   document.addEventListener('keydown', (e)=>{
     if (gameScreen.classList.contains('hidden')) return;
