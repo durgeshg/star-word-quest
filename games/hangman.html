@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Star Word Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#0b1330;
+    --bg-2:#1b2a4a;
+    --surface:#16213e;
+    --surface-2:#1f2e52;
+    --line: rgba(255,255,255,0.08);
+    --cyan:#5eead4;
+    --coral:#ff8b6b;
+    --gold:#ffd166;
+    --violet:#a78bfa;
+    --text:#f4f7fb;
+    --text-dim:#a9b4d0;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(60% 50% at 15% 0%, rgba(94,234,212,0.10), transparent 60%),
+      radial-gradient(50% 40% at 100% 10%, rgba(167,139,250,0.12), transparent 60%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    color:var(--text);
+    font-family:'Nunito', system-ui, sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 14px 60px;
+    overflow-x:hidden;
+  }
+  h1,h2,h3, .display{
+    font-family:'Baloo 2', system-ui, sans-serif;
+  }
+  .stars-bg{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+  }
+  .stars-bg span{
+    position:absolute; width:3px; height:3px; background:rgba(255,255,255,0.55);
+    border-radius:50%; animation:twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.25;} 50%{opacity:.9;} }
+
+  .wrap{ width:100%; max-width:720px; position:relative; z-index:1; }
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .title-block h1{
+    margin:0; font-size:28px; font-weight:800; letter-spacing:.3px;
+    background:linear-gradient(90deg, var(--cyan), var(--violet));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .title-block p{ margin:2px 0 0; color:var(--text-dim); font-size:13px; font-weight:600;}
+
+  .points-pill{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--line);
+    padding:9px 16px; border-radius:999px; font-weight:800; font-size:15px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    white-space:nowrap;
+  }
+  .points-pill .star{ color:var(--gold); font-size:17px; }
+
+  /* ---------- Level select ---------- */
+  .levels{
+    display:grid; grid-template-columns:1fr; gap:14px;
+  }
+  @media(min-width:600px){ .levels{ grid-template-columns:repeat(3,1fr);} }
+
+  .level-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 18px;
+    text-align:left;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .level-card:hover{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.3); }
+  .level-card:active{ transform:translateY(-1px); }
+  .level-card .badge{
+    display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; padding:4px 10px; border-radius:999px; margin-bottom:10px;
+  }
+  .level-card h3{ margin:0 0 4px; font-size:20px; }
+  .level-card p{ margin:0 0 12px; color:var(--text-dim); font-size:13px; line-height:1.5;}
+  .level-card .meta{ font-size:12px; color:var(--text-dim); display:flex; gap:12px; }
+  .lv-easy .badge{ background:rgba(94,234,212,.15); color:var(--cyan); }
+  .lv-medium .badge{ background:rgba(255,209,102,.15); color:var(--gold); }
+  .lv-hard .badge{ background:rgba(255,139,107,.15); color:var(--coral); }
+  .level-card.lv-easy{ border-color:rgba(94,234,212,.25); }
+  .level-card.lv-medium{ border-color:rgba(255,209,102,.25); }
+  .level-card.lv-hard{ border-color:rgba(255,139,107,.25); }
+
+  /* ---------- Game screen ---------- */
+  .game-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 18px 26px;
+    box-shadow:0 12px 30px rgba(0,0,0,.28);
+  }
+  .game-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:8px;}
+  .back-btn, .hint-btn{
+    border:1px solid var(--line); background:var(--surface-2); color:var(--text);
+    font-family:'Nunito',sans-serif; font-weight:700; font-size:13px;
+    padding:8px 14px; border-radius:12px; cursor:pointer; transition:.15s;
+  }
+  .back-btn:hover{ background:#26365f; }
+  .hint-btn{ color:var(--gold); border-color:rgba(255,209,102,.3);}
+  .hint-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .hint-btn:not(:disabled):hover{ background:rgba(255,209,102,.12); }
+
+  .level-tag{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);}
+
+  .rocket-zone{
+    display:flex; align-items:center; justify-content:center;
+    padding:10px 0 6px;
+  }
+  .rocket-zone svg{ width:130px; height:190px; }
+  .part{ transition:opacity .35s ease, transform .35s ease; transform-origin:center; }
+  .part.gone{ opacity:0; transform:translateY(-14px) scale(.6) rotate(12deg); }
+
+  .clue{
+    text-align:center; color:var(--text-dim); font-size:13px; font-weight:700;
+    margin:6px 0 4px; min-height:18px;
+  }
+
+  .word-row{
+    display:flex; justify-content:center; flex-wrap:wrap; gap:8px;
+    margin:14px 0 20px;
+  }
+  .tile{
+    width:38px; height:46px; display:flex; align-items:center; justify-content:center;
+    background:var(--surface-2); border-bottom:3px solid var(--cyan);
+    border-radius:8px; font-size:20px; font-weight:800; font-family:'Baloo 2',sans-serif;
+    animation:pop .25s ease;
+  }
+  @keyframes pop{ from{ transform:scale(.6); opacity:0;} to{ transform:scale(1); opacity:1;} }
+
+  .keyboard{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(34px,1fr));
+    gap:7px; max-width:560px; margin:0 auto;
+  }
+  .key{
+    padding:10px 0; border-radius:9px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--text); font-weight:800; font-size:14px;
+    cursor:pointer; font-family:'Baloo 2',sans-serif; transition:.12s;
+  }
+  .key:hover:not(:disabled){ background:#2b3d6b; }
+  .key:disabled{ opacity:.28; cursor:default; }
+  .key.correct{ background:rgba(94,234,212,.22); border-color:var(--cyan); color:var(--cyan); }
+  .key.wrong{ background:rgba(255,139,107,.18); border-color:var(--coral); color:var(--coral); }
+
+  .status-row{
+    display:flex; justify-content:center; gap:18px; margin:16px 0 4px;
+    font-size:13px; font-weight:700; color:var(--text-dim);
+  }
+  .status-row b{ color:var(--text); }
+
+  /* ---------- Result overlay ---------- */
+  .result{
+    text-align:center; padding:10px 6px 4px;
+  }
+  .result .emoji{ font-size:52px; display:block; margin-bottom:6px; }
+  .result h2{ margin:0 0 6px; font-size:24px; }
+  .result p{ color:var(--text-dim); margin:0 0 18px; font-size:14px; }
+  .result .word-reveal{ font-weight:800; color:var(--gold); }
+  .btn-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn{
+    border:none; padding:12px 20px; border-radius:12px; font-weight:800; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-size:14px; transition:.15s;
+  }
+  .btn.primary{ background:linear-gradient(90deg,var(--cyan),#38bdf8); color:#06251f; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.ghost{ background:var(--surface-2); color:var(--text); border:1px solid var(--line); }
+  .btn.ghost:hover{ background:#26365f; }
+
+  .hidden{ display:none !important; }
+
+  footer.note{
+    margin-top:26px; text-align:center; color:var(--text-dim); font-size:12px; line-height:1.6; max-width:520px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars-bg" id="starsBg"></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="title-block">
+      <a href="../index.html" style="color:var(--text-dim); font-size:12px; font-weight:700; text-decoration:none;">← All Games</a>
+      <h1>🚀 Hangman: Rocket Launch</h1>
+      <p>Guess the word, launch the rocket, collect Star Points</p>
+    </div>
+    <div class="points-pill"><span class="star">⭐</span><span id="pointsDisplay">0</span> Star Points</div>
+  </header>
+
+  <!-- LEVEL SELECT -->
+  <section id="levelSelect">
+    <div class="levels">
+      <div class="level-card lv-easy" data-level="easy">
+        <span class="badge">Easy</span>
+        <h3>Launch Pad</h3>
+        <p>Short, friendly words to warm up.</p>
+        <div class="meta"><span>6 tries</span><span>Hint: 2⭐</span></div>
+      </div>
+      <div class="level-card lv-medium" data-level="medium">
+        <span class="badge">Medium</span>
+        <h3>Orbit Path</h3>
+        <p>Trickier words with a few more letters.</p>
+        <div class="meta"><span>6 tries</span><span>Hint: 3⭐</span></div>
+      </div>
+      <div class="level-card lv-hard" data-level="hard">
+        <span class="badge">Hard</span>
+        <h3>Deep Space</h3>
+        <p>Big vocabulary words — bring your Star Points!</p>
+        <div class="meta"><span>8 tries</span><span>Hint: 4⭐</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="gameScreen" class="hidden">
+    <div class="game-card">
+      <div class="game-top">
+        <button class="back-btn" id="backBtn">← Levels</button>
+        <span class="level-tag" id="levelTag"></span>
+        <button class="hint-btn" id="hintBtn">💡 Hint</button>
+      </div>
+
+      <div class="rocket-zone">
+        <svg viewBox="0 0 100 150">
+          <ellipse class="part" id="p-flame2" cx="50" cy="140" rx="7" ry="14" fill="#ff8b6b"/>
+          <ellipse class="part" id="p-flame1" cx="50" cy="132" rx="10" ry="16" fill="#ffd166"/>
+          <path class="part" id="p-finL" d="M35 95 L15 125 L38 118 Z" fill="#a78bfa"/>
+          <path class="part" id="p-finR" d="M65 95 L85 125 L62 118 Z" fill="#a78bfa"/>
+          <rect class="part" id="p-body-lower" x="34" y="70" width="32" height="55" rx="14" fill="#e2e8f0"/>
+          <rect class="part" id="p-body-upper" x="34" y="30" width="32" height="50" rx="16" fill="#f4f7fb"/>
+          <circle class="part" id="p-window" cx="50" cy="55" r="9" fill="#5eead4"/>
+          <path class="part" id="p-nose" d="M34 32 Q50 -6 66 32 Z" fill="#ff8b6b"/>
+        </svg>
+      </div>
+
+      <div class="clue" id="clueText"></div>
+
+      <div class="word-row" id="wordRow"></div>
+
+      <div class="keyboard" id="keyboard"></div>
+
+      <div class="status-row">
+        <span>Tries left: <b id="triesLeft"></b></span>
+        <span>Word: <b id="wordProgress"></b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT SCREEN -->
+  <section id="resultScreen" class="hidden">
+    <div class="game-card result">
+      <span class="emoji" id="resultEmoji">🌟</span>
+      <h2 id="resultTitle">Nice work!</h2>
+      <p id="resultDetail"></p>
+      <div class="btn-row">
+        <button class="btn primary" id="nextWordBtn">Next Word →</button>
+        <button class="btn ghost" id="levelsBtn">Back to Levels</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">No ads, no accounts, no tracking — just click a letter to play. Works great on a school Chromebook.</footer>
+</div>
+
+<script>
+(function(){
+  // ---------- Word banks ----------
+  const WORD_BANKS = {
+    easy: [
+      {w:'CAT', clue:'A furry pet that says meow', cat:'Animals'},
+      {w:'SUN', clue:'It shines in the sky all day', cat:'Nature'},
+      {w:'DOG', clue:'A pet that barks and wags its tail', cat:'Animals'},
+      {w:'FISH', clue:'It swims and breathes underwater', cat:'Animals'},
+      {w:'FROG', clue:'A green animal that hops and croaks', cat:'Animals'},
+      {w:'BOOK', clue:'You read this for a story', cat:'School'},
+      {w:'TREE', clue:'It has leaves, branches, and roots', cat:'Nature'},
+      {w:'JUMP', clue:'What you do on a trampoline', cat:'Action'},
+      {w:'MILK', clue:'A white drink from a cow', cat:'Food'},
+      {w:'HAPPY', clue:'How you feel on your birthday', cat:'Feelings'},
+      {w:'PLAY', clue:'What you do with toys or friends', cat:'Action'},
+      {w:'STAR', clue:'It twinkles in the night sky', cat:'Nature'}
+    ],
+    medium: [
+      {w:'APPLE', clue:'A crunchy fruit, red or green', cat:'Food'},
+      {w:'GARDEN', clue:'A place where flowers and veggies grow', cat:'Places'},
+      {w:'PURPLE', clue:'A color made by mixing red and blue', cat:'Colors'},
+      {w:'MONKEY', clue:'An animal that loves to climb trees', cat:'Animals'},
+      {w:'CASTLE', clue:'A big stone home for a king or queen', cat:'Places'},
+      {w:'PENCIL', clue:'You write with this in school', cat:'School'},
+      {w:'ROCKET', clue:'It blasts off into outer space', cat:'Space'},
+      {w:'PLANET', clue:'Earth is one of these in space', cat:'Space'},
+      {w:'DOLPHIN', clue:'A smart, friendly animal that lives in the ocean', cat:'Animals'},
+      {w:'RAINBOW', clue:'Colorful arc you see after rain', cat:'Nature'},
+      {w:'ISLAND', clue:'Land surrounded by water on all sides', cat:'Places'},
+      {w:'PUZZLE', clue:'A game with pieces that fit together', cat:'Games'}
+    ],
+    hard: [
+      {w:'MOUNTAIN', clue:'A very tall, rocky landform', cat:'Geography'},
+      {w:'ADVENTURE', clue:'An exciting and unusual journey', cat:'Ideas'},
+      {w:'CALCULATE', clue:'To work out a math answer', cat:'Math'},
+      {w:'VOCABULARY', clue:'All the words you know and use', cat:'Language'},
+      {w:'EXERCISE', clue:'Moving your body to stay healthy', cat:'Health'},
+      {w:'CURIOUS', clue:'Wanting to learn or know more', cat:'Feelings'},
+      {w:'IMAGINE', clue:'To picture something in your mind', cat:'Ideas'},
+      {w:'DISCOVER', clue:'To find something for the first time', cat:'Ideas'},
+      {w:'FANTASTIC', clue:'Another word for amazing or wonderful', cat:'Descriptive'},
+      {w:'MYSTERIOUS', clue:'Hard to explain or understand', cat:'Descriptive'},
+      {w:'ENVIRONMENT', clue:'The natural world around us', cat:'Science'},
+      {w:'CELEBRATE', clue:'To do something fun to mark a special day', cat:'Ideas'}
+    ]
+  };
+
+  const LEVELS = {
+    easy:   {label:'Launch Pad · Easy',  maxWrong:6, hintCost:2, basePoints:10},
+    medium: {label:'Orbit Path · Medium',maxWrong:6, hintCost:3, basePoints:20},
+    hard:   {label:'Deep Space · Hard',  maxWrong:8, hintCost:4, basePoints:35}
+  };
+
+  const ROCKET_PARTS = ['p-nose','p-window','p-body-upper','p-body-lower','p-finL','p-finR','p-flame1','p-flame2'];
+
+  // ---------- State ----------
+  let points = 0;
+  let currentLevel = null;
+  let currentWord = null;
+  let guessed = new Set();
+  let wrongCount = 0;
+  let usedIndexes = { easy:new Set(), medium:new Set(), hard:new Set() };
+  let clueRevealed = false;
+
+  // ---------- Elements ----------
+  const pointsDisplay = document.getElementById('pointsDisplay');
+  const levelSelect = document.getElementById('levelSelect');
+  const gameScreen = document.getElementById('gameScreen');
+  const resultScreen = document.getElementById('resultScreen');
+  const levelTag = document.getElementById('levelTag');
+  const clueText = document.getElementById('clueText');
+  const wordRow = document.getElementById('wordRow');
+  const keyboard = document.getElementById('keyboard');
+  const triesLeft = document.getElementById('triesLeft');
+  const wordProgress = document.getElementById('wordProgress');
+  const hintBtn = document.getElementById('hintBtn');
+
+  function updatePoints(delta){
+    points = Math.max(0, points + delta);
+    pointsDisplay.textContent = points;
+  }
+
+  function pickWord(level){
+    const bank = WORD_BANKS[level];
+    let used = usedIndexes[level];
+    if (used.size >= bank.length) used.clear();
+    let idx;
+    do { idx = Math.floor(Math.random()*bank.length); } while (used.has(idx));
+    used.add(idx);
+    return bank[idx];
+  }
+
+  function startLevel(level){
+    currentLevel = level;
+    currentWord = pickWord(level);
+    guessed = new Set();
+    wrongCount = 0;
+    clueRevealed = false;
+    levelTag.textContent = LEVELS[level].label;
+    clueText.textContent = '';
+    resetRocket();
+    renderWord();
+    renderKeyboard();
+    updateStatus();
+    updateHintButton();
+    show(gameScreen);
+  }
+
+  function resetRocket(){
+    ROCKET_PARTS.forEach(id => document.getElementById(id).classList.remove('gone'));
+  }
+
+  function renderWord(){
+    wordRow.innerHTML = '';
+    currentWord.w.split('').forEach(letter=>{
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.textContent = guessed.has(letter) ? letter : '';
+      wordRow.appendChild(tile);
+    });
+  }
+
+  function renderKeyboard(){
+    keyboard.innerHTML = '';
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter=>{
+      const btn = document.createElement('button');
+      btn.className = 'key';
+      btn.textContent = letter;
+      btn.addEventListener('click', ()=>guessLetter(letter));
+      keyboard.appendChild(btn);
+    });
+  }
+
+  function updateStatus(){
+    const cfg = LEVELS[currentLevel];
+    triesLeft.textContent = (cfg.maxWrong - wrongCount);
+    const revealedCount = currentWord.w.split('').filter(l=>guessed.has(l)).length;
+    wordProgress.textContent = revealedCount + ' / ' + currentWord.w.length;
+  }
+
+  function updateHintButton(){
+    const cost = LEVELS[currentLevel].hintCost;
+    hintBtn.textContent = '💡 Hint (' + cost + '⭐)';
+    hintBtn.disabled = points < cost;
+  }
+
+  function guessLetter(letter){
+    const keys = keyboard.querySelectorAll('.key');
+    const btn = Array.from(keys).find(k=>k.textContent === letter);
+    if (btn) btn.disabled = true;
+    if (guessed.has(letter)) return;
+    guessed.add(letter);
+
+    if (currentWord.w.includes(letter)){
+      if (btn) btn.classList.add('correct');
+    } else {
+      if (btn) btn.classList.add('wrong');
+      wrongCount++;
+      removeRocketPart();
+    }
+    renderWord();
+    updateStatus();
+    checkOutcome();
+  }
+
+  function removeRocketPart(){
+    const cfg = LEVELS[currentLevel];
+    const partsToRemove = Math.ceil((wrongCount / cfg.maxWrong) * ROCKET_PARTS.length);
+    for (let i=0;i<partsToRemove;i++){
+      document.getElementById(ROCKET_PARTS[i]).classList.add('gone');
+    }
+  }
+
+  function checkOutcome(){
+    const cfg = LEVELS[currentLevel];
+    const allGuessed = currentWord.w.split('').every(l=>guessed.has(l));
+    if (allGuessed){
+      const bonus = (cfg.maxWrong - wrongCount) * 2;
+      const earned = cfg.basePoints + bonus;
+      updatePoints(earned);
+      setTimeout(()=>showResult(true, earned), 350);
+    } else if (wrongCount >= cfg.maxWrong){
+      setTimeout(()=>showResult(false, 0), 350);
+    }
+  }
+
+  function useHint(){
+    const cfg = LEVELS[currentLevel];
+    if (points < cfg.hintCost) return;
+    const remaining = currentWord.w.split('').filter(l=>!guessed.has(l));
+    if (remaining.length === 0) return;
+
+    if (!clueRevealed){
+      clueText.textContent = '💭 ' + currentWord.cat + ': ' + currentWord.clue;
+      clueRevealed = true;
+      updatePoints(-cfg.hintCost);
+    } else {
+      const letter = remaining[Math.floor(Math.random()*remaining.length)];
+      guessed.add(letter);
+      const keys = keyboard.querySelectorAll('.key');
+      const btn = Array.from(keys).find(k=>k.textContent === letter);
+      if (btn){ btn.disabled = true; btn.classList.add('correct'); }
+      renderWord();
+      updateStatus();
+      updatePoints(-cfg.hintCost);
+      checkOutcome();
+    }
+    updateHintButton();
+  }
+
+  function showResult(win, earned){
+    const emoji = document.getElementById('resultEmoji');
+    const title = document.getElementById('resultTitle');
+    const detail = document.getElementById('resultDetail');
+    if (win){
+      emoji.textContent = '🚀';
+      title.textContent = 'Blast off! You got it!';
+      detail.innerHTML = 'The word was <span class="word-reveal">' + currentWord.w + '</span>. You earned <b>' + earned + ' Star Points</b>!';
+    } else {
+      emoji.textContent = '🪐';
+      title.textContent = 'So close — try another one!';
+      detail.innerHTML = 'The word was <span class="word-reveal">' + currentWord.w + '</span>. No points lost — give the next word a shot!';
+    }
+    show(resultScreen);
+  }
+
+  function show(section){
+    [levelSelect, gameScreen, resultScreen].forEach(s=>s.classList.add('hidden'));
+    section.classList.remove('hidden');
+  }
+
+  // ---------- Events ----------
+  document.querySelectorAll('.level-card').forEach(card=>{
+    card.addEventListener('click', ()=>startLevel(card.dataset.level));
+  });
+  document.getElementById('backBtn').addEventListener('click', ()=>show(levelSelect));
+  document.getElementById('levelsBtn').addEventListener('click', ()=>show(levelSelect));
+  document.getElementById('nextWordBtn').addEventListener('click', ()=>startLevel(currentLevel));
+  hintBtn.addEventListener('click', useHint);
+
+  document.addEventListener('keydown', (e)=>{
+    if (gameScreen.classList.contains('hidden')) return;
+    const letter = e.key.toUpperCase();
+    if (letter.length === 1 && letter >= 'A' && letter <= 'Z'){
+      guessLetter(letter);
+    }
+  });
+
+  // background stars
+  const starsBg = document.getElementById('starsBg');
+  for (let i=0;i<50;i++){
+    const s = document.createElement('span');
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    starsBg.appendChild(s);
+  }
+
+  updatePoints(0);
+})();
+</script>
+</body>
+</html>
