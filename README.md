@@ -11,6 +11,7 @@ games/
   riddles.html       Riddles (3 levels, multiple choice)
 assets/
   data/
+    words-data.js    Hangman word content — single source of truth for the game + review page
     riddles-data.js  Riddle content — single source of truth for the game + review page
 review/
   word-list.html     Parent/teacher page to audit all word & riddle content
@@ -18,19 +19,19 @@ review/
 
 Each game is a single self-contained HTML file — no build step, no dependencies beyond a browser.
 
-## Adding more riddles (or refreshing a stale list)
+## Adding more content (or refreshing a stale list)
 
-Riddle content lives in one place: `assets/data/riddles-data.js`. Both `games/riddles.html`
-and `review/word-list.html` load it via a `<script src="...">` tag, so editing that one file
-updates the game and the review page at the same time — nothing else to touch.
+Word and riddle content each live in one file under `assets/data/`. The game and the review
+page both load that file via a `<script src="...">` tag, so editing it in one place updates
+both at the same time — nothing else to touch.
 
-To add more: open `assets/data/riddles-data.js` and append objects to the tier (`R1`–`R7`) you
-want to grow, following the existing `{q, options, answer, cat}` shape. Tiers currently hold
-10 riddles each; a 5-question round pulls without repeats until the tier is exhausted, then
-reshuffles. More riddles per tier means longer before repeats show up.
+- **Hangman words** → `assets/data/words-data.js`. Append `{w, clue, cat}` objects to the
+  tier (`T1`–`T7`) you want to grow.
+- **Riddles** → `assets/data/riddles-data.js`. Append `{q, options, answer, cat}` objects to
+  the tier (`R1`–`R7`) you want to grow.
 
-The same pattern can be used for Hangman's word list if it starts feeling repetitive too —
-just ask, and it can be pulled into its own `assets/data/words-data.js` the same way.
+Each tier currently holds 10 entries. A round pulls without repeats until the tier is
+exhausted, then reshuffles — more entries per tier means longer before repeats show up.
 
 ## Adding a new game
 

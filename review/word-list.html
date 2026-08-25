@@ -122,66 +122,11 @@
   </div>
 </div>
 
+<script src="../assets/data/words-data.js"></script>
 <script src="../assets/data/riddles-data.js"></script>
 <script>
-  const TIERS = {
-    T1: [
-      {w:'CAT', clue:'A furry pet that says meow', cat:'Animals'},
-      {w:'SUN', clue:'It shines in the sky all day', cat:'Nature'},
-      {w:'DOG', clue:'A pet that barks and wags its tail', cat:'Animals'},
-      {w:'FISH', clue:'It swims and breathes underwater', cat:'Animals'},
-      {w:'FROG', clue:'A green animal that hops and croaks', cat:'Animals'},
-      {w:'BOOK', clue:'You read this for a story', cat:'School'}
-    ],
-    T2: [
-      {w:'TREE', clue:'It has leaves, branches, and roots', cat:'Nature'},
-      {w:'JUMP', clue:'What you do on a trampoline', cat:'Action'},
-      {w:'MILK', clue:'A white drink from a cow', cat:'Food'},
-      {w:'HAPPY', clue:'How you feel on your birthday', cat:'Feelings'},
-      {w:'PLAY', clue:'What you do with toys or friends', cat:'Action'},
-      {w:'STAR', clue:'It twinkles in the night sky', cat:'Nature'}
-    ],
-    T3: [
-      {w:'APPLE', clue:'A crunchy fruit, red or green', cat:'Food'},
-      {w:'GARDEN', clue:'A place where flowers and veggies grow', cat:'Places'},
-      {w:'PURPLE', clue:'A color made by mixing red and blue', cat:'Colors'},
-      {w:'MONKEY', clue:'An animal that loves to climb trees', cat:'Animals'},
-      {w:'CASTLE', clue:'A big stone home for a king or queen', cat:'Places'},
-      {w:'PENCIL', clue:'You write with this in school', cat:'School'}
-    ],
-    T4: [
-      {w:'ROCKET', clue:'It blasts off into outer space', cat:'Space'},
-      {w:'PLANET', clue:'Earth is one of these in space', cat:'Space'},
-      {w:'DOLPHIN', clue:'A smart, friendly animal that lives in the ocean', cat:'Animals'},
-      {w:'RAINBOW', clue:'Colorful arc you see after rain', cat:'Nature'},
-      {w:'ISLAND', clue:'Land surrounded by water on all sides', cat:'Places'},
-      {w:'PUZZLE', clue:'A game with pieces that fit together', cat:'Games'}
-    ],
-    T5: [
-      {w:'MOUNTAIN', clue:'A very tall, rocky landform', cat:'Geography'},
-      {w:'ADVENTURE', clue:'An exciting and unusual journey', cat:'Ideas'},
-      {w:'CALCULATE', clue:'To work out a math answer', cat:'Math'},
-      {w:'VOCABULARY', clue:'All the words you know and use', cat:'Language'},
-      {w:'EXERCISE', clue:'Moving your body to stay healthy', cat:'Health'},
-      {w:'CURIOUS', clue:'Wanting to learn or know more', cat:'Feelings'}
-    ],
-    T6: [
-      {w:'IMAGINE', clue:'To picture something in your mind', cat:'Ideas'},
-      {w:'DISCOVER', clue:'To find something for the first time', cat:'Ideas'},
-      {w:'FANTASTIC', clue:'Another word for amazing or wonderful', cat:'Descriptive'},
-      {w:'MYSTERIOUS', clue:'Hard to explain or understand', cat:'Descriptive'},
-      {w:'ENVIRONMENT', clue:'The natural world around us', cat:'Science'},
-      {w:'CELEBRATE', clue:'To do something fun to mark a special day', cat:'Ideas'}
-    ],
-    T7: [
-      {w:'ARCHITECTURE', clue:'The art and science of designing buildings', cat:'Careers'},
-      {w:'PERSEVERE', clue:'To keep trying even when something is hard', cat:'Ideas'},
-      {w:'ENTHUSIASTIC', clue:'Full of excitement and energy about something', cat:'Feelings'},
-      {w:'INDEPENDENT', clue:'Able to do things on your own', cat:'Ideas'},
-      {w:'CIVILIZATION', clue:'A large, organized society with cities and culture', cat:'Social Studies'},
-      {w:'TEMPERATURE', clue:'A measurement of how hot or cold something is', cat:'Science'}
-    ]
-  };
+  // Word content loaded from assets/data/words-data.js (single source of truth, shared with the game)
+  const TIERS = window.HANGMAN_TIERS;
 
   const container = document.getElementById('tierList');
   Object.keys(TIERS).forEach(tierKey=>{
