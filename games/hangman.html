@@ -234,6 +234,31 @@
   }
   .player-chip:hover{ background:var(--surface-2); }
 
+  .recent-players{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; justify-content:center;
+  }
+  .recent-players .rp-btn{
+    display:flex; align-items:center; gap:6px;
+    border:1px solid var(--line); background:var(--surface-2); color:var(--text);
+    padding:7px 12px; border-radius:999px; font-weight:800; font-size:12px; cursor:pointer;
+    font-family:'Nunito',sans-serif; transition:.15s;
+  }
+  .recent-players .rp-btn:hover{ background:#26365f; border-color:var(--cyan); }
+  .recent-players .rp-btn .rp-star{ color:var(--gold); }
+
+  .reset-link{
+    display:block; margin:14px auto 0; background:none; border:none;
+    color:var(--text-dim); font-size:11px; font-weight:700; cursor:pointer;
+    text-decoration:underline; font-family:'Nunito',sans-serif;
+  }
+  .reset-link:hover{ color:var(--coral); }
+
+  .lifetime-stats{
+    text-align:center; color:var(--text-dim); font-size:12px; font-weight:700;
+    margin:-6px 0 18px;
+  }
+  .lifetime-stats b{ color:var(--text); }
+
   footer.note{
     margin-top:26px; text-align:center; color:var(--text-dim); font-size:12px; line-height:1.6; max-width:520px;
   }
@@ -266,6 +291,7 @@
     <div class="player-card">
       <h2>👋 Who's playing?</h2>
       <p>We'll pick word sets that match your grade.</p>
+      <div id="recentPlayers" class="recent-players hidden"></div>
       <div class="field">
         <label for="playerNameInput">Your name</label>
         <input type="text" id="playerNameInput" placeholder="e.g. Maya" maxlength="20" autocomplete="off">
@@ -281,11 +307,13 @@
         </select>
       </div>
       <button class="btn primary" id="playerStartBtn" style="width:100%;">Let's Play →</button>
+      <button class="reset-link hidden" id="resetProgressBtn">Reset my saved progress</button>
     </div>
   </section>
 
   <!-- LEVEL SELECT -->
   <section id="levelSelect" class="hidden">
+    <div class="lifetime-stats" id="lifetimeStats"></div>
     <div class="levels">
       <div class="level-card lv-easy" data-level="easy">
         <span class="badge">Easy</span>
@@ -362,7 +390,7 @@
     </div>
   </section>
 
-  <footer class="note">No ads, no accounts, no tracking — just click a letter to play. Works great on a school Chromebook.</footer>
+  <footer class="note">No ads, no accounts, no tracking — your name and scores are saved right in this browser, on this device. Works great on a school Chromebook.</footer>
 </div>
 
 <script>
@@ -450,6 +478,7 @@
   const ROCKET_PARTS = ['p-nose','p-window','p-body-upper','p-body-lower','p-finL','p-finR','p-flame1','p-flame2'];
 
   // ---------- State ----------
+  const STORAGE_KEY = 'starWordQuest_v1';
   let points = 0;
   let currentLevel = null;
   let currentWord = null;
@@ -457,6 +486,8 @@
   let wrongCount = 0;
   let usedIndexes = { easy:new Set(), medium:new Set(), hard:new Set() };
   let streak = 0;
+  let bestStreak = 0;
+  let wordsSolved = 0;
   let soundOn = true;
   let audioCtx = null;
   let player = { name:'', grade:1 };
@@ -481,6 +512,56 @@
   const categoryBadge = document.getElementById('categoryBadge');
   const streakBadge = document.getElementById('streakBadge');
   const soundBtn = document.getElementById('soundBtn');
+  const recentPlayers = document.getElementById('recentPlayers');
+  const resetProgressBtn = document.getElementById('resetProgressBtn');
+  const lifetimeStats = document.getElementById('lifetimeStats');
+
+  // ---------- Local storage (per-browser, no login/accounts) ----------
+  function loadStore(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : { profiles:{} };
+    } catch(e){ return { profiles:{} }; }
+  }
+  function saveStore(store){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
+    catch(e){ /* storage unavailable (private browsing etc.) — game still works, just won't persist */ }
+  }
+  function profileKey(name){ return name.trim().toLowerCase(); }
+
+  function saveCurrentProfile(){
+    const store = loadStore();
+    store.profiles[profileKey(player.name)] = {
+      name: player.name, grade: player.grade,
+      points, bestStreak, wordsSolved,
+      updatedAt: Date.now()
+    };
+    saveStore(store);
+  }
+
+  function renderRecentPlayers(){
+    const store = loadStore();
+    const names = Object.keys(store.profiles).sort((a,b)=> store.profiles[b].updatedAt - store.profiles[a].updatedAt).slice(0,4);
+    if (names.length === 0){ recentPlayers.classList.add('hidden'); return; }
+    recentPlayers.innerHTML = '';
+    names.forEach(key=>{
+      const p = store.profiles[key];
+      const btn = document.createElement('button');
+      btn.className = 'rp-btn';
+      btn.innerHTML = '👤 ' + p.name + ' · Gr' + p.grade + ' <span class="rp-star">⭐' + p.points + '</span>';
+      btn.addEventListener('click', ()=>{
+        playerNameInput.value = p.name;
+        playerGradeInput.value = p.grade;
+        confirmPlayer();
+      });
+      recentPlayers.appendChild(btn);
+    });
+    recentPlayers.classList.remove('hidden');
+  }
+
+  function updateLifetimeStats(){
+    lifetimeStats.innerHTML = 'Lifetime: <b>' + wordsSolved + '</b> words solved · Best streak <b>' + bestStreak + '</b>';
+  }
 
   // ---------- Sound (light beeps, no external files) ----------
   function beep(freq, duration, type){
@@ -510,6 +591,7 @@
   function updatePoints(delta){
     points = Math.max(0, points + delta);
     pointsDisplay.textContent = points;
+    if (player.name) saveCurrentProfile();
   }
 
   function pickWord(level){
@@ -616,14 +698,18 @@
     if (allGuessed){
       const bonus = (cfg.maxWrong - wrongCount) * 2;
       const earned = cfg.basePoints + bonus;
-      updatePoints(earned);
       streak++;
+      wordsSolved++;
+      if (streak > bestStreak) bestStreak = streak;
+      updatePoints(earned);
       updateStreakBadge();
+      updateLifetimeStats();
       sfxWin();
       setTimeout(()=>showResult(true, earned), 350);
     } else if (wrongCount >= cfg.maxWrong){
       streak = 0;
       updateStreakBadge();
+      if (player.name) saveCurrentProfile();
       sfxLose();
       setTimeout(()=>showResult(false, 0), 350);
     }
@@ -682,6 +768,22 @@
     player.name = typedName || 'Explorer';
     player.grade = parseInt(playerGradeInput.value, 10);
     usedIndexes = { easy:new Set(), medium:new Set(), hard:new Set() };
+
+    const store = loadStore();
+    const saved = store.profiles[profileKey(player.name)];
+    if (saved){
+      points = saved.points || 0;
+      bestStreak = saved.bestStreak || 0;
+      wordsSolved = saved.wordsSolved || 0;
+    } else {
+      points = 0; bestStreak = 0; wordsSolved = 0;
+    }
+    streak = 0;
+    pointsDisplay.textContent = points;
+    updateStreakBadge();
+    updateLifetimeStats();
+    saveCurrentProfile();
+
     playerChip.textContent = '👤 ' + player.name + ' · Grade ' + player.grade;
     playerChip.classList.remove('hidden');
     show(levelSelect);
@@ -691,7 +793,16 @@
   playerChip.addEventListener('click', ()=>{
     playerNameInput.value = player.name === 'Explorer' ? '' : player.name;
     playerGradeInput.value = player.grade;
+    renderRecentPlayers();
     show(playerScreen);
+  });
+  resetProgressBtn.addEventListener('click', ()=>{
+    if (confirm('Clear all saved players and scores on this device? This can\'t be undone.')){
+      try{ localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      recentPlayers.classList.add('hidden');
+      resetProgressBtn.classList.add('hidden');
+      playerNameInput.value = '';
+    }
   });
 
   document.addEventListener('keydown', (e)=>{
@@ -711,6 +822,20 @@
     s.style.animationDelay = (Math.random()*3)+'s';
     starsBg.appendChild(s);
   }
+
+  // ---------- Init ----------
+  (function initPlayerScreen(){
+    const store = loadStore();
+    const names = Object.keys(store.profiles);
+    if (names.length > 0){
+      resetProgressBtn.classList.remove('hidden');
+      renderRecentPlayers();
+      const mostRecent = names.sort((a,b)=> store.profiles[b].updatedAt - store.profiles[a].updatedAt)[0];
+      const p = store.profiles[mostRecent];
+      playerNameInput.value = p.name;
+      playerGradeInput.value = p.grade;
+    }
+  })();
 
   updatePoints(0);
 })();
