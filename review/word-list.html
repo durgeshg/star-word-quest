@@ -105,7 +105,11 @@
     </table>
   </div>
 
+  <h2 style="margin:0 0 4px;">🪐 Hangman — Word List</h2>
   <div id="tierList"></div>
+
+  <h2 style="margin:36px 0 4px;">🧩 Riddles — Question List</h2>
+  <div id="riddleTierList"></div>
 
   <div class="checkoff">
     <b>Review checklist</b><br>
@@ -118,6 +122,7 @@
   </div>
 </div>
 
+<script src="../assets/data/riddles-data.js"></script>
 <script>
   const TIERS = {
     T1: [
@@ -190,6 +195,24 @@
       '<p class="tier-note">' + TIERS[tierKey].length + ' words</p>' +
       '<table class="words"><tr><th>Word</th><th>Category</th><th>Clue shown to player</th></tr>' + rows + '</table>';
     container.appendChild(block);
+  });
+
+  // Riddle content loaded from assets/data/riddles-data.js (single source of truth, shared with the game)
+  const RIDDLE_TIERS = window.RIDDLE_TIERS;
+
+  const riddleContainer = document.getElementById('riddleTierList');
+  Object.keys(RIDDLE_TIERS).forEach(tierKey=>{
+    const block = document.createElement('div');
+    block.className = 'tier-block';
+    const rows = RIDDLE_TIERS[tierKey].map(item=>{
+      const optsHtml = item.options.map((o,i)=> i===item.answer ? '<b>'+o+'</b>' : o).join(', ');
+      return '<tr><td>'+item.q+'</td><td class="cat">'+item.cat+'</td><td>'+optsHtml+'</td></tr>';
+    }).join('');
+    block.innerHTML =
+      '<h2>Tier ' + tierKey.slice(1) + '</h2>' +
+      '<p class="tier-note">' + RIDDLE_TIERS[tierKey].length + ' riddles — correct answer in <b>bold</b></p>' +
+      '<table class="words"><tr><th>Riddle</th><th>Category</th><th>Options</th></tr>' + rows + '</table>';
+    riddleContainer.appendChild(block);
   });
 </script>
 </body>

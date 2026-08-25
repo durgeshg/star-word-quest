@@ -8,10 +8,29 @@ Fun, safe, ad-free learning games for school kids — word, vocabulary, and math
 index.html          Games hub / landing page
 games/
   hangman.html       Hangman: Rocket Launch (3 levels, hint points)
-assets/              Shared assets for future games (currently empty)
+  riddles.html       Riddles (3 levels, multiple choice)
+assets/
+  data/
+    riddles-data.js  Riddle content — single source of truth for the game + review page
+review/
+  word-list.html     Parent/teacher page to audit all word & riddle content
 ```
 
 Each game is a single self-contained HTML file — no build step, no dependencies beyond a browser.
+
+## Adding more riddles (or refreshing a stale list)
+
+Riddle content lives in one place: `assets/data/riddles-data.js`. Both `games/riddles.html`
+and `review/word-list.html` load it via a `<script src="...">` tag, so editing that one file
+updates the game and the review page at the same time — nothing else to touch.
+
+To add more: open `assets/data/riddles-data.js` and append objects to the tier (`R1`–`R7`) you
+want to grow, following the existing `{q, options, answer, cat}` shape. Tiers currently hold
+10 riddles each; a 5-question round pulls without repeats until the tier is exhausted, then
+reshuffles. More riddles per tier means longer before repeats show up.
+
+The same pattern can be used for Hangman's word list if it starts feeling repetitive too —
+just ask, and it can be pulled into its own `assets/data/words-data.js` the same way.
 
 ## Adding a new game
 
