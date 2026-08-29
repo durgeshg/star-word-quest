@@ -142,7 +142,7 @@
   .hint-btn:not(:disabled):hover{ background:rgba(255,209,102,.12); }
   .level-tag{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);}
 
-  .progress-dots{ display:flex; justify-content:center; gap:8px; margin-bottom:18px; }
+  .progress-dots{ display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-bottom:18px; max-width:460px; margin-left:auto; margin-right:auto; }
   .dot{ width:12px; height:12px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); transition:.2s; }
   .dot.current{ background:var(--violet); border-color:var(--violet); transform:scale(1.25); }
   .dot.correct{ background:var(--cyan); border-color:var(--cyan); }
@@ -192,7 +192,7 @@
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
 </style>
 </head>
-<body>
+<body data-page="riddles">
 
 <div class="stars-bg" id="starsBg"></div>
 
@@ -243,19 +243,19 @@
         <span class="badge">Easy</span>
         <h3>Warm-Up Riddles</h3>
         <p>Simple, friendly riddles to get thinking.</p>
-        <div class="meta"><span>5 riddles</span><span>Hint: 2⭐</span></div>
+        <div class="meta"><span>20 riddles</span><span>Hint: 2⭐</span></div>
       </div>
       <div class="level-card lv-medium" data-level="medium">
         <span class="badge">Medium</span>
         <h3>Brain Ticklers</h3>
         <p>A bit trickier — read carefully!</p>
-        <div class="meta"><span>5 riddles</span><span>Hint: 3⭐</span></div>
+        <div class="meta"><span>20 riddles</span><span>Hint: 3⭐</span></div>
       </div>
       <div class="level-card lv-hard" data-level="hard">
         <span class="badge">Hard</span>
         <h3>Riddle Masters</h3>
         <p>Big vocabulary riddles — bring your Star Points!</p>
-        <div class="meta"><span>5 riddles</span><span>Hint: 4⭐</span></div>
+        <div class="meta"><span>20 riddles</span><span>Hint: 4⭐</span></div>
       </div>
     </div>
   </section>
@@ -322,7 +322,7 @@
     medium: {label:'Brain Ticklers · Medium', hintCost:3, basePoints:15},
     hard:   {label:'Riddle Masters · Hard',   hintCost:4, basePoints:25}
   };
-  const ROUND_LENGTH = 5;
+  const ROUND_LENGTH = 20;
 
   // ---------- State ----------
   const STORAGE_KEY = 'starWordQuestRiddles_v1';
@@ -636,5 +636,6 @@
   updatePoints(0);
 })();
 </script>
+<script src="../assets/visit-counter.js"></script>
 </body>
 </html>
