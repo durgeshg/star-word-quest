@@ -105,11 +105,24 @@
     </table>
   </div>
 
+  <div class="grade-map" id="usageStats">
+    <b>📊 Site usage on this device</b>
+    <div id="usageStatsBody" style="margin-top:8px;">Loading…</div>
+    <p style="margin:10px 0 0; font-size:11px; opacity:.8;">
+      Counted entirely in this browser's local storage — nothing is sent anywhere. That also
+      means these numbers only cover visits made <i>on this specific Chromebook</i>, not the
+      whole class or school. Check each device individually for a fuller picture.
+    </p>
+  </div>
+
   <h2 style="margin:0 0 4px;">🪐 Hangman — Word List</h2>
   <div id="tierList"></div>
 
   <h2 style="margin:36px 0 4px;">🧩 Riddles — Question List</h2>
   <div id="riddleTierList"></div>
+
+  <h2 style="margin:36px 0 4px;">🏆 Trivia Climb — Question Bank</h2>
+  <div id="quizPoolList"></div>
 
   <div class="checkoff">
     <b>Review checklist</b><br>
@@ -124,6 +137,7 @@
 
 <script src="../assets/data/words-data.js"></script>
 <script src="../assets/data/riddles-data.js"></script>
+<script src="../assets/data/quiz-data.js"></script>
 <script>
   // Word content loaded from assets/data/words-data.js (single source of truth, shared with the game)
   const TIERS = window.HANGMAN_TIERS;
@@ -159,6 +173,41 @@
       '<table class="words"><tr><th>Riddle</th><th>Category</th><th>Options</th></tr>' + rows + '</table>';
     riddleContainer.appendChild(block);
   });
+
+  const quizContainer = document.getElementById('quizPoolList');
+  Object.keys(window.QUIZ_POOLS).forEach(poolKey=>{
+    const pool = window.QUIZ_POOLS[poolKey];
+    const block = document.createElement('div');
+    block.className = 'tier-block';
+    const rows = pool.map(item=>{
+      const optsHtml = item.options.map((o,i)=> i===item.answer ? '<b>'+o+'</b>' : o).join(', ');
+      return '<tr><td>'+item.q+'</td><td class="cat">'+item.cat+'</td><td>'+optsHtml+'</td></tr>';
+    }).join('');
+    block.innerHTML =
+      '<h2>' + poolKey.charAt(0) + poolKey.slice(1).toLowerCase() + ' Pool</h2>' +
+      '<p class="tier-note">' + pool.length + ' questions — correct answer in <b>bold</b></p>' +
+      '<table class="words"><tr><th>Question</th><th>Category</th><th>Options</th></tr>' + rows + '</table>';
+    quizContainer.appendChild(block);
+  });
+
+  // Read this device's local visit counts (same localStorage key visit-counter.js writes to)
+  (function renderUsageStats(){
+    const body = document.getElementById('usageStatsBody');
+    try{
+      const raw = localStorage.getItem('starWordQuest_visits');
+      if (!raw){ body.textContent = "No visits recorded on this device yet."; return; }
+      const data = JSON.parse(raw);
+      const counts = data.counts || {};
+      const labels = { hub: 'Games hub', hangman: 'Hangman', riddles: 'Riddles' };
+      const parts = Object.keys(labels).map(key=>
+        '<b>' + (counts[key] || 0) + '</b> ' + labels[key]
+      );
+      const first = data.firstVisit ? new Date(data.firstVisit).toLocaleDateString() : '—';
+      body.innerHTML = parts.join(' &nbsp;·&nbsp; ') + '<br><span style="font-size:11px; opacity:.7;">Tracking since ' + first + ' on this device.</span>';
+    } catch(e){
+      body.textContent = "Local storage isn't available in this browser, so usage can't be counted here.";
+    }
+  })();
 </script>
 </body>
 </html>
