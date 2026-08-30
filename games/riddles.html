@@ -298,6 +298,7 @@
   <footer class="note">No ads, no accounts, no tracking — your name and scores are saved right in this browser, on this device. Works great on a school Chromebook.</footer>
 </div>
 
+<script src="../assets/player-identity.js"></script>
 <script src="../assets/data/riddles-data.js"></script>
 <script>
 (function(){
@@ -588,6 +589,7 @@
     pointsDisplay.textContent = points;
     updateLifetimeStats();
     saveCurrentProfile();
+    if (window.StarWordQuestIdentity) window.StarWordQuestIdentity.set(player.name, player.grade);
 
     playerChip.textContent = '👤 ' + player.name + ' · Grade ' + player.grade;
     playerChip.classList.remove('hidden');
@@ -626,6 +628,17 @@
     if (names.length > 0){
       resetProgressBtn.classList.remove('hidden');
       renderRecentPlayers();
+    }
+
+    const shared = window.StarWordQuestIdentity && window.StarWordQuestIdentity.get();
+    if (shared && shared.name){
+      playerNameInput.value = shared.name;
+      playerGradeInput.value = shared.grade;
+      confirmPlayer();
+      return;
+    }
+
+    if (names.length > 0){
       const mostRecent = names.sort((a,b)=> store.profiles[b].updatedAt - store.profiles[a].updatedAt)[0];
       const p = store.profiles[mostRecent];
       playerNameInput.value = p.name;
