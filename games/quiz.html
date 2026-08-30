@@ -461,6 +461,23 @@
     return bank[idx];
   }
 
+  // Returns a NEW question object with options shuffled and the answer index
+  // remapped to match — never mutates the shared POOLS data, and ensures the
+  // correct answer isn't always sitting in the same position.
+  function shuffleQuestion(item){
+    const order = item.options.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    return {
+      q: item.q,
+      cat: item.cat,
+      options: order.map(i => item.options[i]),
+      answer: order.indexOf(item.answer)
+    };
+  }
+
   function buildLadder(){
     const cfg = GRADE_CONFIG[player.grade];
     ladder = [];
@@ -470,7 +487,7 @@
       while (i > cfg.bands[bandIdx].end) bandIdx++;
       const pool = cfg.bands[bandIdx].pool;
       ladder.push({ pool, value: LADDER_VALUES[i-1], rung: i });
-      questions.push(pickQuestion(pool));
+      questions.push(shuffleQuestion(pickQuestion(pool)));
     }
   }
 

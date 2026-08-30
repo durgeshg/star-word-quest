@@ -436,7 +436,24 @@
       do { idx = bankIndexes[Math.floor(Math.random()*bankIndexes.length)]; } while (used.has(idx) || picks.includes(idx));
       used.add(idx); picks.push(idx);
     }
-    return picks.map(i=>bank[i]);
+    return picks.map(i=>shuffleQuestion(bank[i]));
+  }
+
+  // Returns a NEW riddle object with options shuffled and the answer index
+  // remapped to match — never mutates the shared TIERS data, and ensures the
+  // correct answer isn't always sitting in the same position.
+  function shuffleQuestion(item){
+    const order = item.options.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    return {
+      q: item.q,
+      cat: item.cat,
+      options: order.map(i => item.options[i]),
+      answer: order.indexOf(item.answer)
+    };
   }
 
   function startLevel(level){
