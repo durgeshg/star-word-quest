@@ -116,6 +116,7 @@
   </div>
 
   <h2 style="margin:0 0 4px;">🪐 Hangman — Word List</h2>
+  <p class="tier-note" style="margin:0 0 10px;">📖 Vocabulary Builder uses this exact same word list (matching words to these clues) — reviewing it here covers both games, nothing separate to check for Vocabulary Builder.</p>
   <div id="tierList"></div>
 
   <h2 style="margin:36px 0 4px;">🧩 Riddles — Question List</h2>
@@ -207,7 +208,7 @@
       if (!raw){ body.textContent = "No visits recorded on this device yet."; return; }
       const data = JSON.parse(raw);
       const counts = data.counts || {};
-      const labels = { hub: 'Games hub', hangman: 'Hangman', riddles: 'Riddles', quiz: 'Trivia Climb', 'math-blast': 'Math Blast' };
+      const labels = { hub: 'Games hub', hangman: 'Hangman', riddles: 'Riddles', quiz: 'Trivia Climb', 'math-blast': 'Math Blast', 'vocabulary-builder': 'Vocabulary Builder' };
       const parts = Object.keys(labels).map(key=>
         '<b>' + (counts[key] || 0) + '</b> ' + labels[key]
       );
