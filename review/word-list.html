@@ -124,6 +124,15 @@
   <h2 style="margin:36px 0 4px;">🏆 Trivia Climb — Question Bank</h2>
   <div id="quizPoolList"></div>
 
+  <h2 style="margin:36px 0 4px;">🔢 Math Blast — How Problems Are Generated</h2>
+  <div class="grade-map" style="margin-bottom:16px;">
+    <b>No fixed question list to review here</b> — Math Blast generates problems on the fly
+    using simple arithmetic rules, so there's nothing scripted or hardcoded to check for
+    inappropriate content. What's worth reviewing instead is whether the difficulty at each
+    grade and level feels right. Here's exactly what each one generates:
+  </div>
+  <div id="mathBlastRules"></div>
+
   <div class="checkoff">
     <b>Review checklist</b><br>
     ☐ No profanity, slang, or inappropriate double-meanings<br>
@@ -198,7 +207,7 @@
       if (!raw){ body.textContent = "No visits recorded on this device yet."; return; }
       const data = JSON.parse(raw);
       const counts = data.counts || {};
-      const labels = { hub: 'Games hub', hangman: 'Hangman', riddles: 'Riddles' };
+      const labels = { hub: 'Games hub', hangman: 'Hangman', riddles: 'Riddles', quiz: 'Trivia Climb', 'math-blast': 'Math Blast' };
       const parts = Object.keys(labels).map(key=>
         '<b>' + (counts[key] || 0) + '</b> ' + labels[key]
       );
@@ -207,6 +216,30 @@
     } catch(e){
       body.textContent = "Local storage isn't available in this browser, so usage can't be counted here.";
     }
+  })();
+
+  // Math Blast generation rules — mirrors CONFIGS in games/math-blast.html
+  (function renderMathBlastRules(){
+    const RULES = {
+      1: { easy:'Addition up to 10', medium:'Addition & subtraction to 10', hard:'Addition & subtraction to 20' },
+      2: { easy:'Addition & subtraction to 20', medium:'Addition & subtraction to 50', hard:'To 100, plus 2s/5s/10s times tables' },
+      3: { easy:'Times tables 1–5, addition/subtraction to 100', medium:'Times tables 1–10 & matching division', hard:'Times tables to 12, mixed with addition/subtraction to 200' },
+      4: { easy:'Times tables & division to 12 (review)', medium:'2-digit × 1-digit multiplication, longer division', hard:'Bigger multiplication & division, addition/subtraction to 500' },
+      5: { easy:'Review: 2-digit × 1-digit & division', medium:'2-digit × 2-digit multiplication, numbers to 999', hard:'Order of operations (e.g. 4 + 6 × 3), plus bigger multiplication' }
+    };
+    const container = document.getElementById('mathBlastRules');
+    Object.keys(RULES).forEach(grade=>{
+      const block = document.createElement('div');
+      block.className = 'tier-block';
+      const rows = ['easy','medium','hard'].map(level=>
+        '<tr><td class="word" style="text-transform:capitalize;">' + level + '</td><td>' + RULES[grade][level] + '</td></tr>'
+      ).join('');
+      block.innerHTML =
+        '<h2>Grade ' + grade + '</h2>' +
+        '<table class="words"><tr><th>Level</th><th>What it generates</th></tr>' + rows + '</table>' +
+        '<p class="tier-note">Timed Blast (Expert mode) always uses this grade\'s Hard rules, with a 5-minute clock.</p>';
+      container.appendChild(block);
+    });
   })();
 </script>
 </body>
